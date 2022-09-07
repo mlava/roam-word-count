@@ -1,4 +1,4 @@
-//import iziToast from "izitoast";
+import iziToast from "izitoast";
 var myEventHandler = undefined;
 
 export default {
