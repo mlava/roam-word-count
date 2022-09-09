@@ -11,6 +11,7 @@ export default {
         myEventHandler = function (e) {
             if (e.key.toLowerCase() === 'q' && e.altKey && e.shiftKey) {
                 getSelectionText();
+                e.preventDefault();
             }
         }
         window.addEventListener('keydown', myEventHandler, false);
@@ -86,3 +87,4 @@ async function wordCount() {
         displayMode: 2
     });
 };
+
