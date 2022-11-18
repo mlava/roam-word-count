@@ -25,23 +25,26 @@ export default {
 }
 
 // get selection text
-function getSelectionText() {
+async function getSelectionText() {
     var selectedText = '';
-    if (window.getSelection) {
-        selectedText = window.getSelection();
-    } else if (document.getSelection) {
-        selectedText = document.getSelection();
-    } else if (document.selection) {
-        selectedText = document.selection.createRange().text;
-    } else return;
-    var words = selectedText.toString();
-    var wordsCount = words.split(" ").length;
+    let uids = await roamAlphaAPI.ui.individualMultiselect.getSelectedUids();
+    console.info(uids);
+
+    var wordsCount = 0;
+    for (var i = 0; i < uids.length; i++) {
+        var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
+        var refString = results[":block/string"].toString().trim();
+        if (refString != "") {
+            var words = refString.split(" ").length;
+            wordsCount = wordsCount + words;
+        }
+    }
     if (wordsCount == 1) {
         wordsCount = "N/A";
     }
     iziToast.show({
         theme: 'dark',
-        message: wordsCount+' words in selected text',
+        message: wordsCount + ' words in selected text',
         position: 'center',
         close: false,
         timeout: 5000,
@@ -76,7 +79,7 @@ async function wordCount() {
     for (var i = 0; i < blocks.length; i++) {
         wordCount = wordCount + blocks[i][0].split(" ").length;
     }
-    
+
     iziToast.show({
         theme: 'dark',
         message: wordCount + " words on this page",
