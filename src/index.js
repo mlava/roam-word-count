@@ -4,21 +4,28 @@ var myEventHandler = undefined;
 export default {
     onload: ({ extensionAPI }) => {
         window.roamAlphaAPI.ui.commandPalette.addCommand({
-            label: "Word Count",
+            label: "Word Count (page)",
             callback: () => wordCount(),
+        });
+        window.roamAlphaAPI.ui.commandPalette.addCommand({
+            label: "Word Count (selected text only)",
+            callback: () => getSelectionText(),
         });
 
         myEventHandler = function (e) {
-            if (e.key.toLowerCase() === 'q' && e.altKey && e.shiftKey) {
-                getSelectionText();
+            if (e.code === 'KeyQ' && e.altKey && e.shiftKey) {
                 e.preventDefault();
+                getSelectionText();
             }
         }
         window.addEventListener('keydown', myEventHandler, false);
     },
     onunload: () => {
         window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'Word Count'
+            label: 'Word Count (page)'
+        });
+        window.roamAlphaAPI.ui.commandPalette.removeCommand({
+            label: 'Word Count (selected text only)'
         });
         window.removeEventListener('keydown', myEventHandler, false);
     }
@@ -26,42 +33,59 @@ export default {
 
 // get selection text
 async function getSelectionText() {
-    var selectedText = '';
     let uids = await roamAlphaAPI.ui.individualMultiselect.getSelectedUids();
-    console.info(uids);
-
-    var wordsCount = 0;
-    for (var i = 0; i < uids.length; i++) {
-        var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
-        var refString = results[":block/string"].toString().trim();
-        if (refString != "") {
-            var words = refString.split(" ").length;
-            wordsCount = wordsCount + words;
+    if (uids.length === 0) {
+        wordCount(true);
+        return;
+    } else {
+        var wordsCount = 0;
+        for (var i = 0; i < uids.length; i++) {
+            var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
+            var refString = results[":block/string"].toString().trim();
+            if (refString != "") {
+                var words = refString.split(" ").length;
+                wordsCount = wordsCount + words;
+            }
         }
+        if (wordsCount == 1) {
+            wordsCount = "N/A";
+        }
+        iziToast.show({
+            theme: 'dark',
+            message: wordsCount + ' words in selected text',
+            position: 'center',
+            close: false,
+            timeout: 5000,
+            closeOnClick: true,
+            displayMode: 2
+        });
     }
-    if (wordsCount == 1) {
-        wordsCount = "N/A";
-    }
-    iziToast.show({
-        theme: 'dark',
-        message: wordsCount + ' words in selected text',
-        position: 'center',
-        close: false,
-        timeout: 5000,
-        closeOnClick: true,
-        displayMode: 2
-    });
 }
 
-async function wordCount() {
+async function wordCount(selected) {
     var wordCount = 0;
     var startBlock;
     startBlock = await window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
     if (startBlock == undefined) {
         startBlock = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-        let q = `[:find (pull ?page [:node/title]) :where [?page :block/uid "${startBlock}"] ]`;
-        var results = await window.roamAlphaAPI.q(q);
-        var pageTitle = results[0][0].title;
+        if (startBlock == null) { // probably roam.log page
+            var uri = window.location.href;
+            const regex = /^https:\/\/roamresearch.com\/.+\/(app|offline)\/\w+$/; // log page
+            if (regex.test(uri)) { // definitely a log page, so get the corresponding page uid
+                var today = new Date();
+                var dd = String(today.getDate()).padStart(2, '0');
+                var mm = String(today.getMonth() + 1).padStart(2, '0');
+                var yyyy = today.getFullYear();
+                startBlock = mm + '-' + dd + '-' + yyyy;
+                let q = `[:find (pull ?page [:node/title]) :where [?page :block/uid "${startBlock}"] ]`;
+                var results = await window.roamAlphaAPI.q(q);
+                var pageTitle = results[0][0].title;
+            }
+        } else {
+            let q = `[:find (pull ?page [:node/title]) :where [?page :block/uid "${startBlock}"] ]`;
+            var results = await window.roamAlphaAPI.q(q);
+            var pageTitle = results[0][0].title;
+        }
     } else {
         // get page title
         var blockUIDList = ['' + startBlock + ''];
@@ -79,10 +103,15 @@ async function wordCount() {
     for (var i = 0; i < blocks.length; i++) {
         wordCount = wordCount + blocks[i][0].split(" ").length;
     }
+    var toast = "";
+    toast += wordCount + " words on this page";
+    if (selected) { 
+        toast += "  (No selected text!)";
+    }
 
     iziToast.show({
         theme: 'dark',
-        message: wordCount + " words on this page",
+        message: toast,
         position: 'center',
         close: false,
         timeout: 5000,
