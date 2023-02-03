@@ -49,13 +49,11 @@ async function getSelectionText(e) {
     if (e) { // block context menu
         if (uids.length === 0) { // one block only
             text += e["block-string"].toString().trim();
-            console.info("Text: ",text);
         } else { // block multi-select mode
             for (var i = 0; i < uids.length; i++) {
                 var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
                 text += results[":block/string"].toString().trim()+" ";
             }
-            console.info("Text: ",text);
         }
     } else if (uids.length === 0) { // command palette and not multi-select mode
         wordCount(true);
@@ -65,7 +63,6 @@ async function getSelectionText(e) {
             var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
             text += results[":block/string"].toString().trim()+" ";
         }
-        console.info("Text: ",text);
     }
     if (text != "") {
         words = text.split(" ").length;
