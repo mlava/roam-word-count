@@ -1,13 +1,12 @@
 import iziToast from "izitoast";
-var myEventHandler = undefined;
 
 export default {
     onload: ({ extensionAPI }) => {
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
+        extensionAPI.ui.commandPalette.addCommand({
             label: "Word Count (page)",
             callback: () => wordCount(),
         });
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
+        extensionAPI.ui.commandPalette.addCommand({
             label: "Word Count (selected text only)",
             callback: () => getSelectionText(),
         });
@@ -15,27 +14,12 @@ export default {
             label: "Word Count (selected block(s) only)",
             callback: (e) => getSelectionText(e),
         });
-
-        myEventHandler = function (e) {
-            if (e.code === 'KeyQ' && e.altKey && e.shiftKey) {
-                e.preventDefault();
-                getSelectionText();
-            }
-        }
-        window.addEventListener('keydown', myEventHandler, false);
     },
     onunload: () => {
-        window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'Word Count (page)'
-        });
-        window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'Word Count (selected text only)'
-        });
         window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
             label: "Word Count (selected block(s) only)",
             callback: (e) => getSelectionText(e),
         });
-        window.removeEventListener('keydown', myEventHandler, false);
     }
 }
 
