@@ -27,7 +27,6 @@ export default {
 async function getSelectionText(e) {
     let uids = await roamAlphaAPI.ui.individualMultiselect.getSelectedUids();
     var text = "";
-    var words = "";
     var wordsCount = 0;
 
     if (e) { // block context menu
@@ -36,7 +35,7 @@ async function getSelectionText(e) {
         } else { // block multi-select mode
             for (var i = 0; i < uids.length; i++) {
                 var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
-                text += results[":block/string"].toString().trim()+" ";
+                text += results[":block/string"].toString().trim() + " ";
             }
         }
     } else if (uids.length === 0) { // command palette and not multi-select mode
@@ -45,12 +44,14 @@ async function getSelectionText(e) {
     } else { // block multi-select mode and command palette
         for (var i = 0; i < uids.length; i++) {
             var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
-            text += results[":block/string"].toString().trim()+" ";
+            text += results[":block/string"].toString().trim() + " ";
         }
     }
+    
     if (text != "") {
-        words = text.split(" ").length;
-        wordsCount = wordsCount + words;
+        //words = text.split(" ").length;
+        let CJK = await getCJKCount(text.toString());
+        wordsCount = wordsCount + CJK;
     }
     if (wordsCount == 1) {
         wordsCount = "N/A";
@@ -105,8 +106,11 @@ async function wordCount(selected) {
     blocks.map((data, index) => { return data[0]; }).join('\n');
 
     for (var i = 0; i < blocks.length; i++) {
-        wordCount = wordCount + blocks[i][0].split(" ").length;
+        //wordCount = wordCount + blocks[i][0].split(" ").length;
+        let CJK = await getCJKCount(blocks[i][0].toString());
+        wordCount = wordCount + CJK;
     }
+
     var toast = "";
     toast += wordCount + " words on this page";
     if (selected) {
@@ -124,3 +128,42 @@ async function wordCount(selected) {
     });
 };
 
+async function getCJKCount(text) { // found here: https://devv.ai/zh/search?threadId=ddiho7ad3e9s
+    // Define regular expressions
+    var cjkRegEx = /[\u3400-\u4db5\u4e00-\u9fa5\uf900-\ufa2d]/; // Matches all CJK ideographs
+    var wordBreakRegEx = /\W/; // Matches all characters that "break up" words
+
+    // Initialize variables
+    var wordCount = 0;
+    var inWord = false;
+    var length = text.length;
+
+    // Iterate through the text
+    for (var i = 0; i < length; i++) {
+        var curChar = text.charAt(i);
+        if (cjkRegEx.test(curChar)) {
+            // Character is a CJK ideograph
+            // Count it as a word
+            wordCount += inWord ? 2 : 1;
+            inWord = false;
+        } else if (wordBreakRegEx.test(curChar)) {
+            // Character is a "word-breaking" character
+            // If a word was started, increment the word count
+            if (inWord) {
+                wordCount += 1;
+                inWord = false;
+            }
+        } else {
+            // All other characters are "word" characters
+            // Indicate that a word has begun
+            inWord = true;
+        }
+    }
+
+    // If the text ended while in a word, make sure to count it
+    if (inWord) {
+        wordCount += 1;
+    }
+
+    return wordCount;
+}
