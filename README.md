@@ -1,6 +1,7 @@
 This extension allows you to calculate the word count for any page or block selection.
 
 NEW:
+- added support for Chinese, Japanese and Korean ideographs. Thanks [@aka-phrankie](https://github.com/aka-phrankie)
 - now compatible with the new user-defined hotkeys function - see Hotkeys option in Roam Research Settings
 
 Trigger via the Command Palette and a toast with the word count will be created. Or, right-click on a block bullet and select Plugins > Word Count (selected block(s) only).
