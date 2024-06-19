@@ -7,35 +7,52 @@ export default {
             callback: () => wordCount(),
         });
         extensionAPI.ui.commandPalette.addCommand({
-            label: "Word Count (selected text only)",
+            label: "Word Count (selected text)",
             callback: () => getSelectionText(),
         });
         window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-            label: "Word Count (selected block(s) only)",
-            callback: (e) => getSelectionText(e),
+            label: "Word Count (selected blocks)",
+            callback: (e) => getSelectionText(e, false),
+        });
+        window.roamAlphaAPI.ui.msContextMenu.addCommand({
+            label: "Word Count (selected blocks)",
+            callback: (e) => getSelectionText(e, true),
         });
     },
     onunload: () => {
         window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-            label: "Word Count (selected block(s) only)",
-            callback: (e) => getSelectionText(e),
+            label: "Word Count (selected blocks)",
+            callback: (e) => getSelectionText(e, false),
+        });
+        window.roamAlphaAPI.ui.msContextMenu.removeCommand({
+            label: "Word Count (selected blocks)",
+            callback: (e) => getSelectionText(e, true),
         });
     }
 }
 
 // get selection text
-async function getSelectionText(e) {
+async function getSelectionText(e, msMode) {
     let uids = await roamAlphaAPI.ui.individualMultiselect.getSelectedUids();
     var text = "";
     var wordsCount = 0;
-
-    if (e) { // block context menu
-        if (uids.length === 0) { // one block only
-            text += e["block-string"].toString().trim();
-        } else { // block multi-select mode
-            for (var i = 0; i < uids.length; i++) {
-                var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
-                text += results[":block/string"].toString().trim() + " ";
+    
+    if (e) { // block context menu or multiselect menu
+        if (msMode == true) {
+            if (e.hasOwnProperty("blocks") && e.blocks.length > 0) { // multi-select mode
+                for (var i = 0; i < e.blocks.length; i++) {
+                    var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", e.blocks[i]["block-uid"]]);
+                    text += results[":block/string"].toString().trim() + " ";
+                }
+            }
+        } else {
+            if (uids.length == 0) { // one block only
+                text += e["block-string"].toString().trim();
+            } else {
+                for (var i = 0; i < uids.length; i++) {
+                    var results = await window.roamAlphaAPI.data.pull("[:block/string]", [":block/uid", uids[i]]);
+                    text += results[":block/string"].toString().trim() + " ";
+                }
             }
         }
     } else if (uids.length === 0) { // command palette and not multi-select mode

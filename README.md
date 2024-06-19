@@ -1,6 +1,7 @@
 This extension allows you to calculate the word count for any page or block selection.
 
 NEW:
+- added support for multiselect contect menu (right-click, Plugins, Word Count (selected blocks))
 - added support for Chinese, Japanese and Korean ideographs. Thanks [@aka-phrankie](https://github.com/aka-phrankie)
 - now compatible with the new user-defined hotkeys function - see Hotkeys option in Roam Research Settings
 
